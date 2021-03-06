@@ -58,4 +58,18 @@ class TimerService : Service() {
             stopSelf()
         }
     }
+
+    fun addTimeToCurrent(seconds: Int): Boolean {
+        currentJob ?: return false
+
+        remainingTime.value = remainingTime.value + seconds
+
+        return true
+    }
+
+    fun cancelCurrent(): Boolean {
+        currentJob?.cancel() ?: return false
+
+        return true
+    }
 }

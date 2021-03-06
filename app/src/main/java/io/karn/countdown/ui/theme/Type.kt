@@ -17,27 +17,48 @@ package io.karn.countdown.ui.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import io.karn.countdown.R
+
+private val monospace = FontFamily(
+    Font(R.font.jetbrains_mono_regular),
+    Font(R.font.jetbrains_mono_bold, FontWeight.Bold),
+)
 
 // Set of Material typography styles to start with
+private val defaultType = Typography()
 val typography = Typography(
+    h2 = defaultType.h2.copy(
+        fontFamily = monospace,
+        fontWeight = FontWeight.Bold,
+    ),
+    h3 = defaultType.h3.copy(
+        fontFamily = monospace,
+    ),
+    h4 = defaultType.h4.copy(
+        fontFamily = monospace,
+    ),
+    subtitle1 = defaultType.subtitle1.copy(
+        fontFamily = monospace,
+    ),
     body1 = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp
     )
-        /* Other default text styles to override
-    button = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.W500,
-        fontSize = 14.sp
-    ),
-    caption = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 12.sp
-    )
-    */
+    /* Other default text styles to override
+button = TextStyle(
+    fontFamily = FontFamily.Default,
+    fontWeight = FontWeight.W500,
+    fontSize = 14.sp
+),
+caption = TextStyle(
+    fontFamily = FontFamily.Default,
+    fontWeight = FontWeight.Normal,
+    fontSize = 12.sp
+)
+*/
 )
