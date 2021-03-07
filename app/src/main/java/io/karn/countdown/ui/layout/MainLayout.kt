@@ -80,7 +80,7 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
 
     val isEditing = remember { mutableStateOf(false) }
 
-    val targetTime = remember { mutableStateListOf<Int>() }
+    val targetTime = remember { mutableStateListOf<Int>(*viewModel.targetTime.toTypedArray()) }
 
     // TODO: These animations start immediately with the composable, we can optimize when this is
     // created.
@@ -278,6 +278,7 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
                     // Pause and unpause the timer
                     if (isEditing.value) {
                         viewModel.onTimerStartRequest(targetTimeToSeconds(targetTime))
+                        viewModel.targetTime = targetTime.toList()
                         isEditing.value = false
                     } else {
                         // Pause unpause
