@@ -43,6 +43,7 @@ val typography = Typography(
     ),
     subtitle1 = defaultType.subtitle1.copy(
         fontFamily = monospace,
+        fontWeight = FontWeight.Bold,
     ),
     body1 = TextStyle(
         fontFamily = FontFamily.Default,
