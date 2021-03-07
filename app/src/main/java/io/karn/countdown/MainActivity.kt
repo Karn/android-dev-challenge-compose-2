@@ -76,6 +76,14 @@ class MainActivity : ComponentActivity() {
                 timerService.resumeTimer()
             }
 
+            viewModel.onTimerResetRequest = { seconds ->
+                timerService.startTimer(seconds, false)
+            }
+
+            viewModel.onTimerDeleteRequest = {
+                timerService.cancelCurrent()
+            }
+
             // Start collecting the values and updating the ViewModel.
             // TODO: We can hack together a ViewModel to be scoped to the application which will
             // allow us to share said ViewModel between the UI and the Service.

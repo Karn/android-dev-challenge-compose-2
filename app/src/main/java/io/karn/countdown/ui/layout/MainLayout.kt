@@ -2,6 +2,12 @@ package io.karn.countdown.ui.layout
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -27,13 +33,14 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -48,7 +55,7 @@ enum class CountDownState {
     TIMER_CONFIG
 }
 
-// Null indicates a seperator
+// Null indicates a separator
 val DIGITS = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, null)
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -61,6 +68,18 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
     val isEditing = remember { mutableStateOf(false) }
 
     val targetTime = remember { mutableStateListOf<Int>() }
+
+    // TODO: These animations start immediately with the composable, we can optimize when this is
+    // created.
+    val infiniteTransition = rememberInfiniteTransition()
+    val pausedTextAlphaAnimation by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 0.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
 
 
     Column(
@@ -87,9 +106,15 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
                 Text(
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .alpha(if (!isEditing.value || targetTime.size > 0) 1f else 0.5f)
+                        .graphicsLayer {
+                            alpha = if (!isEditing.value || targetTime.size > 0) {
+                                if (isPaused.value) pausedTextAlphaAnimation else 1f
+                            } else {
+                                0.5f
+                            }
+                        }
                         .clickable(
-                            enabled = !isEditing.value,
+                            enabled = !isEditing.value && secondsRemaining.value == 0,
                             interactionSource = remember { MutableInteractionSource() },
                             indication = rememberRipple(false, radius = 200.dp)
                         ) {
@@ -99,7 +124,7 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
                         secondsRemaining.value
                     ),
                     textAlign = TextAlign.Center,
-                    style = if (isEditing.value) MaterialTheme.typography.h4 else MaterialTheme.typography.h2
+                    style = if (isEditing.value) MaterialTheme.typography.h4 else MaterialTheme.typography.h2,
                 )
             }
 
@@ -170,13 +195,13 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
 
         Row {
             Text(
-                text = "Delete",
+                text = "DELETE",
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .weight(1f)
                     .align(Alignment.CenterVertically)
                     .clickable {
-
+                        viewModel.onTimerDeleteRequest()
                     }
             )
 
@@ -215,13 +240,17 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
             }
 
             Text(
-                text = "Delete",
+                text = "RESET",
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .weight(1f)
                     .align(Alignment.CenterVertically)
                     .clickable {
-
+                        if (targetTime.size > 0) {
+                            // Reset the state by clearing cancelling the timer
+                            viewModel.onTimerResetRequest(targetTimeToSeconds(targetTime))
+                            isEditing.value = false
+                        }
                     },
             )
         }

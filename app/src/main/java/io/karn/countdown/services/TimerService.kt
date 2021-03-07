@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class TimerService : Service() {
@@ -42,32 +43,30 @@ class TimerService : Service() {
     val isPaused = MutableStateFlow(false)
     private var currentJob: Job? = null
 
-    fun startTimer(seconds: Int) {
+    fun startTimer(seconds: Int, startImmediately: Boolean = true) {
         // Cancel existing
         // Notify of cancel
 
         // Start new job
         remainingTime.value = seconds
-        initTimer()
+        initTimer(startImmediately)
     }
 
-    private fun initTimer() {
+    private fun initTimer(startImmediately: Boolean) {
         if (currentJob != null) {
-            pauseTimer()
+            // Cancel the job to restart the counter
+            currentJob?.cancel()
         }
 
-        isPaused.value = false
+        isPaused.value = !startImmediately
         currentJob = CoroutineScope(Dispatchers.IO).launch {
-            while (remainingTime.value > 0) {
+            while (isActive && remainingTime.value > 0) {
                 delay(1000) // Every second
                 // Decrement the seconds remaining
                 if (!isPaused.value) {
                     remainingTime.value = remainingTime.value - 1
                 }
             }
-
-            // Stop the current service
-            stopSelf()
         }
     }
 
@@ -92,6 +91,7 @@ class TimerService : Service() {
 
         // Update the remaining time to be 0
         remainingTime.value = 0
+        isPaused.value = false
         currentJob = null
 
         return true
