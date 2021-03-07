@@ -17,12 +17,16 @@ package io.karn.countdown.ui.layout
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -55,6 +59,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -96,8 +102,28 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
         )
     )
 
+    val color1 by infiniteTransition.animateColor(
+        initialValue = Color(0xFF12C2E9),
+        targetValue = Color(0xFFC471ED),
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, delayMillis = 200, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+    val color2 by infiniteTransition.animateColor(
+        initialValue = Color(0xFFF64F59),
+        targetValue = Color(0xFF9F438C),
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, delayMillis = 230, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    val backgroundAlpha: Float by animateFloatAsState(if (isEditing.value || (secondsRemaining.value == 0)) 0f else 1f, animationSpec = tween(2000))
+
     Column(
         modifier = Modifier.fillMaxSize()
+            .background(Brush.verticalGradient(Pair(0f, color1), Pair(400f, color2)), alpha = backgroundAlpha)
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
@@ -207,17 +233,19 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
             }
         }
 
-        Row {
-            Text(
-                text = "DELETE",
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .align(Alignment.CenterVertically)
-                    .clickable {
-                        viewModel.onTimerDeleteRequest()
-                    }
-            )
+        Row(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            if (!isEditing.value) {
+                Text(
+                    text = "DELETE",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .align(Alignment.CenterVertically)
+                        .clickable {
+                            viewModel.onTimerDeleteRequest()
+                        }
+                )
+            }
 
             Button(
                 modifier = Modifier.padding(24.dp),
@@ -253,20 +281,22 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
                 }
             }
 
-            Text(
-                text = "RESET",
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .align(Alignment.CenterVertically)
-                    .clickable {
-                        if (targetTime.size > 0) {
-                            // Reset the state by clearing cancelling the timer
-                            viewModel.onTimerResetRequest(targetTimeToSeconds(targetTime))
-                            isEditing.value = false
-                        }
-                    },
-            )
+            if (!isEditing.value) {
+                Text(
+                    text = "RESET",
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .align(Alignment.CenterVertically)
+                        .clickable {
+                            if (targetTime.size > 0) {
+                                // Reset the state by clearing cancelling the timer
+                                viewModel.onTimerResetRequest(targetTimeToSeconds(targetTime))
+                                isEditing.value = false
+                            }
+                        },
+                )
+            }
         }
     }
 }
