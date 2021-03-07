@@ -10,7 +10,7 @@
   the License.
   -->
 <resources>
-    <color name="immersive_sys_ui">#33000000</color>
+    <color name="immersive_sys_ui">#66000000</color>
     <color name="nav_bar">@color/immersive_sys_ui</color>
 
     <color name="purple_200">#FFBB86FC</color>

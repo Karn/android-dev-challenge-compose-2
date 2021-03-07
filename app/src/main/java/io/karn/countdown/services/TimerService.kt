@@ -15,11 +15,25 @@
  */
 package io.karn.countdown.services
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.getSystemService
+import io.karn.countdown.MainActivity
+import io.karn.countdown.R
+import io.karn.countdown.util.formatSeconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,6 +41,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+
+const val TIMER_SERVICE_FOREGROUND_NOTIFICATION = 99
 
 class TimerService : Service() {
 
@@ -56,6 +72,17 @@ class TimerService : Service() {
     val remainingTime = MutableStateFlow(0)
     val isPaused = MutableStateFlow(false)
     private var currentJob: Job? = null
+    private var isRunningAsForegroundService = false
+
+    private val pendingIntent: PendingIntent by lazy {
+        Intent(this, MainActivity::class.java).let { notificationIntent ->
+            PendingIntent.getActivity(this, 0, notificationIntent, 0)
+        }
+    }
+
+    fun isTimerActive(): Boolean {
+        return remainingTime.value > 0
+    }
 
     fun startTimer(seconds: Int, startImmediately: Boolean = true) {
         // Cancel existing
@@ -75,12 +102,19 @@ class TimerService : Service() {
         isPaused.value = !startImmediately
         currentJob = CoroutineScope(Dispatchers.IO).launch {
             while (isActive && remainingTime.value > 0) {
+                // TODO: Use deltas to compute how much we actually want to delay
                 delay(1000) // Every second
                 // Decrement the seconds remaining
                 if (!isPaused.value) {
+                    Log.w("TAG", "Timer tick: ${remainingTime.value}")
                     remainingTime.value = remainingTime.value - 1
                 }
+
+                updateNotification()
             }
+
+            // Remove the foreground notification when this is complete
+            stopForForeground()
         }
     }
 
@@ -109,5 +143,64 @@ class TimerService : Service() {
         currentJob = null
 
         return true
+    }
+
+    fun startForForeground() {
+        isRunningAsForegroundService = true
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createDefaultNotificationChannel()
+        }
+
+        // Notification ID cannot be 0.
+        startForeground(
+            TIMER_SERVICE_FOREGROUND_NOTIFICATION,
+            getNotificationForSeconds(remainingTime.value)
+        )
+    }
+
+    fun stopForForeground() {
+        stopForeground(true)
+        isRunningAsForegroundService = false
+    }
+
+    private fun updateNotification() {
+        if (!isRunningAsForegroundService) {
+            return
+        }
+
+        NotificationManagerCompat
+            .from(this)
+            .notify(
+                TIMER_SERVICE_FOREGROUND_NOTIFICATION,
+                getNotificationForSeconds(remainingTime.value)
+            )
+    }
+
+    private fun getNotificationForSeconds(seconds: Int): Notification {
+        // TODO: Add notification actions to delete, pause/resume, reset the timer
+        return NotificationCompat.Builder(this, "default")
+            .setOngoing(true)
+            .setSmallIcon(R.drawable.ic_timer_24px)
+            .setContentTitle(formatSeconds(seconds)) // Remaining Seconds
+            .setContentText(getText((if (isPaused.value) R.string.notification_message_paused else R.string.notification_message_active)))
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .setColor(Color.DarkGray.toArgb())
+            .setContentIntent(pendingIntent)
+            .setOnlyAlertOnce(true)
+            .build()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun createDefaultNotificationChannel() {
+        val channel = NotificationChannel(
+            "default",
+            "Default notification channel",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).also {
+            it.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+        }
+        val service = getSystemService<NotificationManager>()!!
+        service.createNotificationChannel(channel)
     }
 }

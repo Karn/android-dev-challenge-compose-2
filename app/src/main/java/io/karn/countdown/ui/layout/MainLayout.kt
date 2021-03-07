@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -66,11 +67,7 @@ import io.karn.countdown.MainViewModel
 import io.karn.countdown.R
 import io.karn.countdown.ext.popOrNull
 import io.karn.countdown.ext.stackOf
-
-enum class CountDownState {
-    TIMER,
-    TIMER_CONFIG
-}
+import io.karn.countdown.util.formatSeconds
 
 // Null indicates a separator
 val DIGITS = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, null)
@@ -81,7 +78,6 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
     val secondsRemaining = viewModel.remainingTime.collectAsState()
     val isPaused = viewModel.isPaused.collectAsState()
 
-    val currentState = remember { mutableStateOf(CountDownState.TIMER) }
     val isEditing = remember { mutableStateOf(false) }
 
     val targetTime = remember { mutableStateListOf<Int>() }
@@ -117,7 +113,7 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
 
     val backgroundAlpha: Float by animateFloatAsState(
         if (isEditing.value || (secondsRemaining.value == 0)) 0f else 1f,
-        animationSpec = tween(2000)
+        animationSpec = tween(2500)
     )
 
     Column(
@@ -133,13 +129,6 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
             modifier = Modifier
                 .weight(1f)
                 .fillMaxSize()
-                .clickable(
-//                            enabled = !isEditing.value && secondsRemaining.value == 0,
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    isEditing.value = !isEditing.value
-                }
                 .padding(horizontal = 16.dp)
         ) {
             if (isEditing.value) {
@@ -153,29 +142,61 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
                     .weight(10f)
                     .fillMaxSize()
             ) {
-                Text(
+
+                Column(
                     modifier = Modifier
+                        .fillMaxWidth()
                         .align(Alignment.Center)
-                        .graphicsLayer {
-                            alpha = if (!isEditing.value || targetTime.size > 0) {
-                                if (isPaused.value) pausedTextAlphaAnimation else 1f
-                            } else {
-                                0.5f
+                ) {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer {
+                                alpha = if (!isEditing.value || targetTime.size > 0) {
+                                    if (isPaused.value) pausedTextAlphaAnimation else 1f
+                                } else {
+                                    0.5f
+                                }
                             }
-                        },
-                    text = if (isEditing.value) formatTargetTime(targetTime) else formatSeconds(
-                        secondsRemaining.value
-                    ),
-                    textAlign = TextAlign.Center,
-                    style = if (isEditing.value) MaterialTheme.typography.h4 else MaterialTheme.typography.h2,
-                )
+                            .clickable(
+                                enabled = !isEditing.value && secondsRemaining.value == 0,
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = rememberRipple(
+                                    bounded = false,
+                                    radius = 100.dp,
+                                    color = MaterialTheme.colors.primary.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                isEditing.value = !isEditing.value
+                            },
+                        text = if (isEditing.value) formatTargetTime(targetTime) else formatSeconds(
+                            secondsRemaining.value
+                        ),
+                        textAlign = TextAlign.Center,
+                        style = if (isEditing.value) MaterialTheme.typography.h4 else MaterialTheme.typography.h2,
+                    )
+                    if (!isEditing.value && secondsRemaining.value > 0) {
+                        Text(
+                            text = "ADD 60s TO COUNTDOWN",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.onTimerAddSecondsRequest(60)
+                                },
+                            color = MaterialTheme.colors.primary,
+                            style = MaterialTheme.typography.subtitle1,
+                        )
+                    }
+                }
             }
 
             if (isEditing.value) {
                 Icon(
                     modifier = Modifier
                         .size(24.dp)
-                        .weight (1f)
+                        .weight(1f)
                         .align(Alignment.CenterVertically)
                         .clickable(enabled = targetTime.size > 0) {
                             targetTime.removeAt(targetTime.size - 1)
@@ -269,7 +290,7 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
                 }
             ) {
                 Text(
-                    text = if (isEditing.value) "START" else (if (secondsRemaining.value == 0 || isPaused.value) "PLAY" else "PAUSE"),
+                    text = if (isEditing.value || secondsRemaining.value == 0) "START" else (if (isPaused.value) "RESUME" else "PAUSE"),
                     style = MaterialTheme.typography.subtitle1
                 )
             }
@@ -294,21 +315,6 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
             }
         }
     }
-}
-
-fun formatSeconds(timeInSeconds: Int): String {
-    val hours = timeInSeconds / 3600
-    val secondsLeft = timeInSeconds - hours * 3600
-    val minutes = secondsLeft / 60
-    val seconds = secondsLeft - minutes * 60
-
-    return StringBuilder()
-        .append("$hours".padStart(2, '0'))
-        .append(":")
-        .append("$minutes".padStart(2, '0'))
-        .append(":")
-        .append("$seconds".padStart(2, '0'))
-        .toString()
 }
 
 fun targetTimeToSeconds(target: SnapshotStateList<Int>): Int {

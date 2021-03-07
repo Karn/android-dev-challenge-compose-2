@@ -22,6 +22,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -62,6 +63,10 @@ class MainActivity : ComponentActivity() {
             timerService = binder.getService()
             isServiceBound = true
 
+            // Service is bound -- stop in foreground
+            Log.w("TAG", "Stopping foreground")
+            timerService.stopForForeground()
+
             // Attach handlers
             viewModel.onTimerStartRequest = { seconds ->
                 startService(Intent(this@MainActivity, TimerService::class.java))
@@ -78,6 +83,10 @@ class MainActivity : ComponentActivity() {
 
             viewModel.onTimerResetRequest = { seconds ->
                 timerService.startTimer(seconds, false)
+            }
+
+            viewModel.onTimerAddSecondsRequest = { seconds ->
+                timerService.addTimeToCurrent(seconds)
             }
 
             viewModel.onTimerDeleteRequest = {
@@ -139,6 +148,14 @@ class MainActivity : ComponentActivity() {
         if (isServiceBound) {
             unbindService(connection)
             isServiceBound = false
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        if (isServiceBound && timerService.isTimerActive()) {
+            timerService.startForForeground()
         }
     }
 }

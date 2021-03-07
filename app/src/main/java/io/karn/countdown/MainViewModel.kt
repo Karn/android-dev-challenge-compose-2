@@ -30,5 +30,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var onTimerPauseRequest: () -> Unit = {}
     var onTimerResumeRequest: () -> Unit = {}
     var onTimerResetRequest: (Int) -> Unit = {}
+    var onTimerAddSecondsRequest: (Int) -> Unit = {}
     var onTimerDeleteRequest: () -> Unit = {}
 }
