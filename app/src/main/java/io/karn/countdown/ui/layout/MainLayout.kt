@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -23,6 +22,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
@@ -42,7 +42,6 @@ import dev.chrisbanes.accompanist.insets.statusBarsPadding
 import io.karn.countdown.MainViewModel
 import io.karn.countdown.ext.popOrNull
 import io.karn.countdown.ext.stackOf
-import io.karn.countdown.ext.whenTrue
 
 enum class CountDownState {
     TIMER,
@@ -56,6 +55,7 @@ val DIGITS = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, null)
 @Composable
 fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
     val secondsRemaining = viewModel.remainingTime.collectAsState()
+    val isPaused = viewModel.isPaused.collectAsState()
 
     val currentState = remember { mutableStateOf(CountDownState.TIMER) }
     val isEditing = remember { mutableStateOf(false) }
@@ -125,7 +125,7 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
             modifier = Modifier.fillMaxHeight(0.5f),
             visible = isEditing.value
         ) {
-            Column {
+            Column(modifier = Modifier.padding(vertical = 32.dp)) {
                 DIGITS.chunked(3).forEach { rowItems ->
                     Row(
                         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -133,8 +133,17 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
                     ) {
                         rowItems.map { digit ->
                             Box(
-                                modifier = Modifier.weight(1f)
-                                    .clickable(enabled = digit != null) {
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable(
+                                        enabled = digit != null,
+                                        interactionSource = MutableInteractionSource(),
+                                        indication = rememberRipple(
+                                            bounded = false,
+                                            radius = 46.dp,
+                                            color = MaterialTheme.colors.primary.copy(alpha = 0.5f)
+                                        ),
+                                    ) {
                                         // There are six total items HHMMSS
                                         if (digit != null && targetTime.size < 6) {
                                             // Skip adding zero to the start of the list
@@ -184,7 +193,11 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
                         isEditing.value = false
                     } else {
                         // Pause unpause
-                        
+                        if (isPaused.value) {
+                            viewModel.onTimerResumeRequest()
+                        } else {
+                            viewModel.onTimerPauseRequest()
+                        }
                     }
                 }
             ) {
@@ -194,7 +207,10 @@ fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {
                         style = MaterialTheme.typography.subtitle1
                     )
                 } else {
-                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "play")
+                    Icon(
+                        imageVector = if (secondsRemaining.value == 0 || isPaused.value) Icons.Default.PlayArrow else Icons.Default.Pause,
+                        contentDescription = "play"
+                    )
                 }
             }
 

@@ -22,8 +22,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -33,7 +31,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -48,7 +45,6 @@ import io.karn.countdown.ui.layout.SettingsLayout
 import io.karn.countdown.ui.theme.MyTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
@@ -66,19 +62,34 @@ class MainActivity : ComponentActivity() {
             timerService = binder.getService()
             isServiceBound = true
 
-            Log.w("TAG", "Service bound")
-
+            // Attach handlers
             viewModel.onTimerStartRequest = { seconds ->
-                Log.w("TAG", "onTimerStartRequest")
                 startService(Intent(this@MainActivity, TimerService::class.java))
                 timerService.startTimer(seconds)
             }
 
-            // Start collecting the values
-            CoroutineScope(Dispatchers.IO).launch {
-                timerService.remainingTime.collect { seconds ->
-                    Log.w("TAG", "Timer ticked $seconds")
-                    viewModel.remainingTime.value = seconds
+            viewModel.onTimerPauseRequest = {
+                timerService.pauseTimer()
+            }
+
+            viewModel.onTimerResumeRequest = {
+                timerService.resumeTimer()
+            }
+
+            // Start collecting the values and updating the ViewModel.
+            // TODO: We can hack together a ViewModel to be scoped to the application which will
+            // allow us to share said ViewModel between the UI and the Service.
+            CoroutineScope(Dispatchers.IO).apply {
+                launch {
+                    timerService.remainingTime.collect { seconds ->
+                        viewModel.remainingTime.value = seconds
+                    }
+                }
+
+                launch {
+                    timerService.isPaused.collect { isRunning ->
+                        viewModel.isPaused.value = isRunning
+                    }
                 }
             }
         }

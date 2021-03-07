@@ -39,6 +39,7 @@ class TimerService : Service() {
 
 
     val remainingTime = MutableStateFlow(0)
+    val isPaused = MutableStateFlow(false)
     private var currentJob: Job? = null
 
     fun startTimer(seconds: Int) {
@@ -47,16 +48,35 @@ class TimerService : Service() {
 
         // Start new job
         remainingTime.value = seconds
+        initTimer()
+    }
+
+    private fun initTimer() {
+        if (currentJob != null) {
+            pauseTimer()
+        }
+
+        isPaused.value = false
         currentJob = CoroutineScope(Dispatchers.IO).launch {
             while (remainingTime.value > 0) {
                 delay(1000) // Every second
                 // Decrement the seconds remaining
-                remainingTime.value = remainingTime.value - 1
+                if (!isPaused.value) {
+                    remainingTime.value = remainingTime.value - 1
+                }
             }
 
             // Stop the current service
             stopSelf()
         }
+    }
+
+    fun pauseTimer() {
+        isPaused.value = true
+    }
+
+    fun resumeTimer() {
+        isPaused.value = false
     }
 
     fun addTimeToCurrent(seconds: Int): Boolean {
@@ -69,6 +89,10 @@ class TimerService : Service() {
 
     fun cancelCurrent(): Boolean {
         currentJob?.cancel() ?: return false
+
+        // Update the remaining time to be 0
+        remainingTime.value = 0
+        currentJob = null
 
         return true
     }

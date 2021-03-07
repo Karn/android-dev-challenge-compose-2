@@ -9,6 +9,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Timer
     val remainingTime = MutableStateFlow(0)
+    val isPaused = MutableStateFlow(false)
 
     var onTimerStartRequest: (Int) -> Unit = {}
+    var onTimerPauseRequest: () -> Unit = {}
+    var onTimerResumeRequest: () -> Unit = {}
 }
