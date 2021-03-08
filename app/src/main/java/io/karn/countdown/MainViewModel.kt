@@ -20,8 +20,6 @@ import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    val themeConfig = MutableStateFlow(Pair(false, false))
-
     // Timer
     var targetTime = listOf<Int>()
     val remainingTime = MutableStateFlow(0)

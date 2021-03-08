@@ -72,6 +72,9 @@ import io.karn.countdown.util.formatSeconds
 // Null indicates a separator
 val DIGITS = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, null, 0, null)
 
+/**
+ * TODO: Allow users to navigate back from the timer config screen without it exiting the app
+ */
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun MainLayout(navController: NavHostController, viewModel: MainViewModel) {

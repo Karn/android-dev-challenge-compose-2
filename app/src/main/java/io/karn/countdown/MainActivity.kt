@@ -26,13 +26,10 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
@@ -42,7 +39,6 @@ import androidx.navigation.compose.rememberNavController
 import dev.chrisbanes.accompanist.insets.ProvideWindowInsets
 import io.karn.countdown.services.TimerService
 import io.karn.countdown.ui.layout.MainLayout
-import io.karn.countdown.ui.layout.SettingsLayout
 import io.karn.countdown.ui.theme.MyTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -123,13 +119,8 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
-            val scope = rememberCoroutineScope()
-            val themeConfig = viewModel.themeConfig.collectAsState(context = scope.coroutineContext)
-
             ProvideWindowInsets {
-                val (useSystemSettings, darkMode) = themeConfig.value
-
-                MyTheme(if (useSystemSettings) isSystemInDarkTheme() else darkMode) {
+                MyTheme() {
                     MyApp(viewModel)
                 }
             }
@@ -174,11 +165,6 @@ fun MyApp(viewModel: MainViewModel) {
             composable("main") {
                 MainLayout(navController, viewModel)
             }
-
-            // Settings
-            composable("settings") {
-                SettingsLayout(navController, viewModel)
-            }
         }
     }
 }
@@ -195,10 +181,6 @@ fun LightPreview() {
 @Composable
 fun DarkPreview() {
     MyTheme(darkTheme = true) {
-        val viewModel = MainViewModel(Application()).also {
-            it.themeConfig.value = Pair(false, true)
-        }
-
-        MyApp(viewModel)
+        MyApp(MainViewModel(Application()))
     }
 }
