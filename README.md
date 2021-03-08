@@ -17,11 +17,11 @@ Checkout the running timer animation as well as the background timer functionali
 
 ## :camera_flash: Screenshots
 <!-- You can add more screenshots here if you like -->
-<img src="/results/screenshot_1.png" width="260">&emsp;<img src="/results/screenshot_2.png" width="260">
-<img src="/results/screenshot_3.png" width="260">&emsp;<img src="/results/screenshot_4.png" width="260">
+<img src="/results/screenshot_1.png" width="260"><img src="/results/screenshot_2.png" width="260">
+<img src="/results/screenshot_3.png" width="260"><img src="/results/screenshot_4.png" width="260">
 <img src="/results/screenshot_5.png" width="260">
 
-![video](/results/video.mp4)
+> [Video demo](/results/video.mp4)
 
 ## License
 ```
